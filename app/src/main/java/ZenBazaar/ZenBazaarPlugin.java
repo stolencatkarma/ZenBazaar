@@ -36,6 +36,7 @@ public class ZenBazaarPlugin extends JavaPlugin {
         // Register commands
         getCommand("buy").setExecutor(new BuyCommand(this));
         getCommand("sell").setExecutor(new SellCommand(this));
+        getCommand("bazaar").setExecutor(new BazaarGuiCommand(this));
         getLogger().info("ZenBazaar enabled!");
     }
 

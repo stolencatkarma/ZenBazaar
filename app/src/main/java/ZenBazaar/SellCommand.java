@@ -46,39 +46,42 @@ public class SellCommand implements CommandExecutor {
             player.sendMessage(Component.text("You cannot sell this item on the same day you bought it.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
             return true;
         }
-        try (Connection conn = db.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT price, supply, demand FROM bazaar_items WHERE item = ?");
+        Connection conn = db.getConnection();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT price, supply, demand FROM bazaar_items WHERE item = ?")) {
             ps.setString(1, itemName);
-            ResultSet rs = ps.executeQuery();
-            double price;
-            if (!rs.next()) {
-                // Insert new item with config base price and supply
-                Double configPrice = plugin.getBasePrice(itemName);
-                price = configPrice != null ? configPrice : 1.0;
-                PreparedStatement ins = conn.prepareStatement("INSERT INTO bazaar_items (item, supply, demand, price) VALUES (?, ?, ?, ?)");
-                ins.setString(1, itemName);
-                ins.setInt(2, amount * 10); // initial supply
-                ins.setInt(3, 0);
-                ins.setDouble(4, price);
-                ins.executeUpdate();
-            } else {
-                price = rs.getDouble("price");
+            try (ResultSet rs = ps.executeQuery()) {
+                double price;
+                if (!rs.next()) {
+                    // Insert new item with config base price and supply
+                    Double configPrice = plugin.getBasePrice(itemName);
+                    price = configPrice != null ? configPrice : 1.0;
+                    try (PreparedStatement ins = conn.prepareStatement("INSERT INTO bazaar_items (item, supply, demand, price) VALUES (?, ?, ?, ?)")) {
+                        ins.setString(1, itemName);
+                        ins.setInt(2, amount * 10); // initial supply
+                        ins.setInt(3, 0);
+                        ins.setDouble(4, price);
+                        ins.executeUpdate();
+                    }
+                } else {
+                    price = rs.getDouble("price");
+                }
+                // Remove item from player
+                item.setAmount(0);
+                // Pay player
+                double payout = price * amount;
+                econ.depositPlayer(player, payout);
+                // Update supply/demand/price or use fixed price
+                if (plugin.getPricingModel().equalsIgnoreCase("SUPPLY_DEMAND")) {
+                    try (PreparedStatement update = conn.prepareStatement("UPDATE bazaar_items SET supply = supply + ?, demand = demand - 1, price = price * 0.98 WHERE item = ?")) {
+                        update.setInt(1, amount);
+                        update.setString(2, itemName);
+                        update.executeUpdate();
+                    }
+                }
+                // Record sell action
+                plugin.getHistory().recordAction(player.getUniqueId(), itemName, "SELL");
+                player.sendMessage(Component.text("You sold " + amount + " " + itemName + " for $" + payout + "!").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
             }
-            // Remove item from player
-            item.setAmount(0);
-            // Pay player
-            double payout = price * amount;
-            econ.depositPlayer(player, payout);
-            // Update supply/demand/price or use fixed price
-            if (plugin.getPricingModel().equalsIgnoreCase("SUPPLY_DEMAND")) {
-                PreparedStatement update = conn.prepareStatement("UPDATE bazaar_items SET supply = supply + ?, demand = demand - 1, price = price * 0.98 WHERE item = ?");
-                update.setInt(1, amount);
-                update.setString(2, itemName);
-                update.executeUpdate();
-            }
-            // Record sell action
-            plugin.getHistory().recordAction(player.getUniqueId(), itemName, "SELL");
-            player.sendMessage(Component.text("You sold " + amount + " " + itemName + " for $" + payout + "!").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
         } catch (Exception e) {
             player.sendMessage(Component.text("An error occurred while selling to the bazaar.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
             e.printStackTrace();

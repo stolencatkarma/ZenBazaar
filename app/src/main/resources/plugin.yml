@@ -10,3 +10,6 @@ commands:
   sell:
     description: Sell the item you are holding to the bazaar
     usage: /sell
+  bazaar:
+    description: View the bazaar market inventory
+    usage: /bazaar
