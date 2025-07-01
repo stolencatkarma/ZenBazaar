@@ -1,0 +1,12 @@
+name: ZenBazaar
+main: ZenBazaar.ZenBazaarPlugin
+version: 1.0.0
+description: A global bazaar plugin with supply/demand pricing and gold nugget currency.
+api-version: 1.21
+commands:
+  buy:
+    description: Buy the item you are holding from the bazaar
+    usage: /buy
+  sell:
+    description: Sell the item you are holding to the bazaar
+    usage: /sell

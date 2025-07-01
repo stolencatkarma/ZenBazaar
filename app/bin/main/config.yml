@@ -1,0 +1,13 @@
+# ZenBazaar configuration
+# Set base prices for items here. Example:
+# base-prices:
+#   DIAMOND: 100.0
+#   IRON_INGOT: 10.0
+base-prices:
+  DIAMOND: 20.0
+  IRON_INGOT: 5.0
+  GOLD_INGOT: 9.0
+  EMERALD: 1.0
+
+pricing-model: SUPPLY_DEMAND # Options: SUPPLY_DEMAND, FIXED_PRICE  
+
